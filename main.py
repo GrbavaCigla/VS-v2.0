@@ -6,8 +6,9 @@ from gi.repository import Gtk
 from tqdm import tqdm
 
 class Controller:
-    def __init__(self,url):
-        content = requests.get(url).text
+    def __init__(self,filename):
+        with open(filename,"r") as file:
+            content = file.read()
         parsed = json.loads(content)
         self.items = {}
         for i in parsed["Items"]:
