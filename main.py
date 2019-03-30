@@ -3,14 +3,37 @@ import json
 import requests
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+from tqdm import tqdm
 
-class Item:
+class Controller:
     def __init__(self,url):
-        self.url = url
+        content = requests.get(url).text
+        parsed = json.loads(content)
+        self.items = {}
+        for i in parsed["Items"]:
+            self.items[i["name"]]=[i["desc"],i["link"],i["author"]]
+    def toListTile(self):
+        res = []
+        for k,v in self.items.items():
+            res.append(ListTile(k,v[0],v[1],v[2]))
+        return res
+
 
 class ListTile(Gtk.Box):
-    def __init__(self,name,description):
+    def install(self,widget):
+        self.content = requests.get(self.link).text
+        local_filename = "./scripts/"+self.link.split('/')[-1]
+        with requests.get(self.link, stream=True) as r:
+            r.raise_for_status()
+            with open(local_filename, 'wb') as f:
+                for chunk in tqdm(r.iter_content(chunk_size=8192)):
+                    if chunk:
+                        f.write(chunk)
+        return local_filename
+    def __init__(self,name,description,link,author):
         Gtk.Box.__init__(self)
+        self.link = link
+        self.author = author
         self.name = name
         self.set_border_width(20)
         self.description = description
@@ -24,6 +47,7 @@ class ListTile(Gtk.Box):
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         inst_button = Gtk.Button(label="Install")
+        inst_button.connect("clicked",self.install)
 
         grid = Gtk.Grid()
         grid.add(name_label)
@@ -78,7 +102,7 @@ class MainWindow(Gtk.Window):
         grid.attach(browse_button,6,0,1,1)
 
         # Scroller
-        widgets = [ListTile("Generic Name","Generic Discrption.")]
+        widgets = Controller("./source.json").toListTile()
         listbox = Gtk.ListBox()
         listbox.connect("row-selected",self.selectRow)
         for wid,i in enumerate(widgets):
@@ -92,10 +116,8 @@ class MainWindow(Gtk.Window):
         self.start_button = Gtk.Button(label="Deploy")
         self.start_button.set_sensitive(False)
         grid.attach(self.start_button,6,7,1,1)
-        
-
 
 window = MainWindow()
-window.connect("destroy", Gtk.main_quit)
+window.connect("destroy",Gtk.main_quit)
 window.show_all()
 Gtk.main()
