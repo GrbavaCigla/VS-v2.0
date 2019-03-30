@@ -1,7 +1,12 @@
 import gi
+import json
+import requests
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+class Item:
+    def __init__(self,url):
+        self.url = url
 
 class ListTile(Gtk.Box):
     def __init__(self,name,description):
@@ -15,11 +20,16 @@ class ListTile(Gtk.Box):
         name_label.set_xalign(0)
         desc_label = Gtk.Label()
         desc_label.set_label(self.description)
+        desc_label.set_xalign(0)
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        inst_button = Gtk.Button(label="Install")
 
         grid = Gtk.Grid()
-
         grid.add(name_label)
         grid.attach(desc_label,0,1,1,1)
+        grid.attach(spacer,1,0,1,1)
+        grid.attach(inst_button,2,0,1,2)
         self.add(grid)
 
 
@@ -64,7 +74,7 @@ class MainWindow(Gtk.Window):
         self.dir_entry.set_placeholder_text("Device")
         self.dir_entry.set_hexpand(True)
 
-        grid.attach(self.dir_entry, 0, 0, 5, 1)
+        grid.attach(self.dir_entry, 0, 0, 6, 1)
         grid.attach(browse_button,6,0,1,1)
 
         # Scroller
