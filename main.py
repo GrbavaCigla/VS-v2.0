@@ -1,27 +1,29 @@
+from tqdm import tqdm
+from gi.repository import Gtk
 import gi
 import json
 import requests
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
-from tqdm import tqdm
+
 
 class Controller:
-    def __init__(self,filename):
-        with open(filename,"r") as file:
+    def __init__(self, filename):
+        with open(filename, "r") as file:
             content = file.read()
         parsed = json.loads(content)
         self.items = {}
         for i in parsed["Items"]:
-            self.items[i["name"]]=[i["desc"],i["link"],i["author"]]
+            self.items[i["name"]] = [i["desc"], i["link"], i["author"]]
+
     def toListTile(self):
         res = []
-        for k,v in self.items.items():
-            res.append(ListTile(k,v[0],v[1],v[2]))
+        for k, v in self.items.items():
+            res.append(ListTile(k, v[0], v[1], v[2]))
         return res
 
 
 class ListTile(Gtk.Box):
-    def install(self,widget):
+    def install(self, widget):
         self.content = requests.get(self.link).text
         local_filename = "./scripts/"+self.link.split('/')[-1]
         with requests.get(self.link, stream=True) as r:
@@ -31,7 +33,8 @@ class ListTile(Gtk.Box):
                     if chunk:
                         f.write(chunk)
         return local_filename
-    def __init__(self,name,description,link,author):
+
+    def __init__(self, name, description, link, author):
         Gtk.Box.__init__(self)
         self.link = link
         self.author = author
@@ -48,25 +51,27 @@ class ListTile(Gtk.Box):
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         inst_button = Gtk.Button(label="Install")
-        inst_button.connect("clicked",self.install)
+        inst_button.connect("clicked", self.install)
 
         grid = Gtk.Grid()
         grid.add(name_label)
-        grid.attach(desc_label,0,1,1,1)
-        grid.attach(spacer,1,0,1,1)
-        grid.attach(inst_button,2,0,1,2)
+        grid.attach(desc_label, 0, 1, 1, 1)
+        grid.attach(spacer, 1, 0, 1, 1)
+        grid.attach(inst_button, 2, 0, 1, 2)
         self.add(grid)
 
 
 class MainWindow(Gtk.Window):
-    def selectRow(self,widget,tile):
+    def selectRow(self, widget, tile):
         self.viru_name = tile.get_child().name
         if not self.output_folder == None:
-                self.start_button.set_sensitive(True)
+            self.start_button.set_sensitive(True)
 
     def openFolder(self, widget):
-        dialog = Gtk.FileChooserDialog(title="Please choose a folder", action=Gtk.FileChooserAction.SELECT_FOLDER)
-        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, "Select", Gtk.ResponseType.OK)
+        dialog = Gtk.FileChooserDialog(
+            title="Please choose a folder", action=Gtk.FileChooserAction.SELECT_FOLDER)
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, "Select", Gtk.ResponseType.OK)
         dialog.set_default_size(800, 400)
 
         response = dialog.run()
@@ -77,6 +82,7 @@ class MainWindow(Gtk.Window):
                 self.start_button.set_sensitive(True)
 
         dialog.destroy()
+
     def __init__(self):
         Gtk.Window.__init__(self, title="ViruStick v2.0")
         self.output_folder = None
@@ -93,32 +99,33 @@ class MainWindow(Gtk.Window):
 
         # First and Second Row Buttons
         browse_button = Gtk.Button(label="Browse")
-        browse_button.connect("clicked",self.openFolder)
+        browse_button.connect("clicked", self.openFolder)
         self.dir_entry = Gtk.Entry()
-        self.dir_entry.set_property("can-focus",False)
+        self.dir_entry.set_property("can-focus", False)
         self.dir_entry.set_placeholder_text("Device")
         self.dir_entry.set_hexpand(True)
 
         grid.attach(self.dir_entry, 0, 0, 6, 1)
-        grid.attach(browse_button,6,0,1,1)
+        grid.attach(browse_button, 6, 0, 1, 1)
 
         # Scroller
         widgets = Controller("./source.json").toListTile()
         listbox = Gtk.ListBox()
-        listbox.connect("row-selected",self.selectRow)
-        for wid,i in enumerate(widgets):
-            listbox.insert(i,wid)
+        listbox.connect("row-selected", self.selectRow)
+        for wid, i in enumerate(widgets):
+            listbox.insert(i, wid)
         swin = Gtk.ScrolledWindow()
         swin.add(listbox)
         swin.set_vexpand(True)
-        grid.attach(swin,0,1,7,6)
+        grid.attach(swin, 0, 1, 7, 6)
 
         # Deploy Buttons
         self.start_button = Gtk.Button(label="Deploy")
         self.start_button.set_sensitive(False)
-        grid.attach(self.start_button,6,7,1,1)
+        grid.attach(self.start_button, 6, 7, 1, 1)
+
 
 window = MainWindow()
-window.connect("destroy",Gtk.main_quit)
+window.connect("destroy", Gtk.main_quit)
 window.show_all()
 Gtk.main()
